@@ -453,18 +453,34 @@ body.print-mode #counter,body.print-mode #nav-dots,body.print-mode #hint,body.pr
 
   if (isRemote) {
     document.body.style.background = '#091428';
-    document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:#091428;gap:16px;font-family:Inter,-apple-system,sans-serif;padding:12px;">'
-      + '<div style="width:60px;margin-bottom:8px;opacity:0.7;"><svg viewBox="0 0 600 120" fill="none"><text x="0" y="95" font-family="Inter,sans-serif" font-size="110" font-weight="800" fill="#2B7DE9">Commit<tspan fill="#5BA3F5">.</tspan></text></svg></div>'
-      + '<div id="rc-counter" style="font-size:20px;color:#E8EDF5;font-weight:700;">Kobler til...</div>'
-      + '<button id="btn-prev" style="width:85vw;max-width:220px;padding:22px;font-size:18px;font-weight:700;background:#152A4D;color:#E8EDF5;border:2px solid #1E3D6B;border-radius:12px;cursor:pointer;-webkit-tap-highlight-color:transparent;">&#9664; Forrige</button>'
-      + '<button id="btn-next" style="width:85vw;max-width:220px;padding:22px;font-size:18px;font-weight:700;background:#2B7DE9;color:#fff;border:none;border-radius:12px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Neste &#9654;</button>'
+    document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:#091428;font-family:Inter,-apple-system,sans-serif;padding:0;margin:0;overflow:hidden;-webkit-user-select:none;user-select:none;">'
+      + '<div id="rc-counter" style="position:fixed;top:8px;left:0;right:0;text-align:center;font-size:13px;color:#5BA3F5;font-weight:700;z-index:10;">Kobler til...</div>'
+      + '<button id="btn-main" style="width:100vw;height:100vh;font-size:22px;font-weight:800;background:#2B7DE9;color:#fff;border:none;cursor:pointer;-webkit-tap-highlight-color:transparent;letter-spacing:.05em;">NESTE &#9654;</button>'
       + '</div>';
 
     function sendCmd(cmd) {
       fetch(ntfyBase, { method: 'POST', body: cmd }).catch(function(){});
     }
-    document.getElementById('btn-prev').addEventListener('click', function(){ sendCmd('prev'); });
-    document.getElementById('btn-next').addEventListener('click', function(){ sendCmd('next'); });
+    var btn = document.getElementById('btn-main');
+    var pressTimer = null;
+    var didLongPress = false;
+    btn.addEventListener('touchstart', function(e){
+      e.preventDefault();
+      didLongPress = false;
+      pressTimer = setTimeout(function(){
+        didLongPress = true;
+        sendCmd('prev');
+        btn.style.background = '#152A4D';
+        btn.textContent = '\u25C0 TILBAKE';
+        setTimeout(function(){ btn.style.background = '#2B7DE9'; btn.innerHTML = 'NESTE \u25B6'; }, 300);
+      }, 400);
+    }, {passive: false});
+    btn.addEventListener('touchend', function(e){
+      e.preventDefault();
+      clearTimeout(pressTimer);
+      if (!didLongPress) { sendCmd('next'); btn.style.background = '#1A5BBF'; setTimeout(function(){ btn.style.background = '#2B7DE9'; }, 150); }
+    });
+    btn.addEventListener('touchcancel', function(){ clearTimeout(pressTimer); });
 
     var es = new EventSource(ntfyBase + '/sse');
     es.addEventListener('message', function(e) {
