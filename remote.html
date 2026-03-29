@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Fjernkontroll — Commit</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;background:#091428;font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;color:#E8EDF5;-webkit-font-smoothing:antialiased;}
+body{display:flex;align-items:center;justify-content:center;}
+.wrap{display:flex;flex-direction:column;align-items:center;gap:12px;padding:8px;width:100%;}
+.logo{width:50px;opacity:.7;}
+h1{font-size:14px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#5BA3F5;}
+input{width:80vw;max-width:180px;padding:14px;font-size:28px;font-weight:800;text-align:center;letter-spacing:.3em;text-transform:uppercase;background:#0F1D38;color:#2B7DE9;border:2px solid #1E3D6B;border-radius:12px;outline:none;font-family:inherit;}
+input:focus{border-color:#2B7DE9;}
+input::placeholder{color:#3A5478;font-size:16px;letter-spacing:.1em;font-weight:600;}
+.go{width:80vw;max-width:180px;padding:16px;font-size:16px;font-weight:700;background:#2B7DE9;color:#fff;border:none;border-radius:12px;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo"><svg viewBox="0 0 600 120" fill="none"><text x="0" y="95" font-family="Inter,sans-serif" font-size="110" font-weight="800" fill="#2B7DE9">C<tspan fill="#5BA3F5">.</tspan></text></svg></div>
+  <h1>Fjernkontroll</h1>
+  <input id="code" type="text" maxlength="4" placeholder="KODE" autocomplete="off" autocapitalize="characters" spellcheck="false">
+  <button class="go" id="go">Koble til</button>
+</div>
+<script>
+document.getElementById('go').addEventListener('click', function(){
+  var code = document.getElementById('code').value.trim().toUpperCase();
+  if (code.length >= 2) {
+    window.location.href = 'styremote-mars-2026.html?remote=' + code;
+  }
+});
+document.getElementById('code').addEventListener('keydown', function(e){
+  if (e.key === 'Enter') document.getElementById('go').click();
+});
+</script>
+</body>
+</html>
