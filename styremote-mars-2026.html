@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Styremøte mars 2026 — Øystein Kopstad | Commit</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg:#091428; --surface:#0F1D38; --surface2:#152A4D; --border:#1E3D6B;
+  --accent:#2B7DE9; --accent-light:#5BA3F5; --accent-dark:#1A5BBF;
+  --accent-glow:rgba(43,125,233,0.12);
+  --text:#E8EDF5; --text-muted:#8BA3C4; --text-subtle:#3A5478;
+  --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --green:#34D399; --green-glow:rgba(52,211,153,0.10);
+  --amber:#FBBF24; --amber-glow:rgba(251,191,36,0.10);
+}
+html,body{width:100%;height:100%;background:var(--bg);font-family:var(--font);color:var(--text);overflow:hidden;-webkit-font-smoothing:antialiased;}
+#deck{width:100vw;height:100vh;position:relative;overflow:hidden;}
+.slide{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:6vh 8vw;opacity:0;transform:translateY(20px);transition:opacity .38s cubic-bezier(.4,0,.2,1),transform .38s cubic-bezier(.4,0,.2,1);pointer-events:none;z-index:1;}
+.slide.active{opacity:1;transform:translateY(0);pointer-events:all;z-index:2;}
+.slide.out{opacity:0;transform:translateY(-20px);}
+#counter{position:fixed;top:28px;right:72px;font-size:12px;font-weight:500;letter-spacing:.06em;color:var(--text-subtle);z-index:100;}
+#counter b{color:var(--text-muted);font-weight:600;}
+#nav-dots{position:fixed;right:26px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:7px;z-index:100;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--text-subtle);cursor:pointer;transition:background .2s,transform .2s;}
+.dot:hover{background:var(--text-muted);}
+.dot.on{background:var(--accent);transform:scale(1.35);}
+#hint{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--text-subtle);letter-spacing:.07em;z-index:100;user-select:none;}
+#progress{position:fixed;bottom:0;left:0;height:3px;background:linear-gradient(90deg,var(--accent-dark),var(--accent),var(--accent-light));z-index:200;transition:width .3s ease;}
+#logo{position:fixed;bottom:28px;left:36px;width:140px;opacity:0.55;z-index:100;}
+#timer{position:fixed;top:28px;left:36px;font-size:12px;font-weight:500;letter-spacing:.06em;color:var(--text-subtle);z-index:100;font-variant-numeric:tabular-nums;display:none;}
+#timer.show{display:block;}
+#notes-panel{position:fixed;bottom:0;left:0;right:0;height:140px;background:rgba(15,29,56,0.95);backdrop-filter:blur(12px);border-top:1px solid var(--border);padding:18px 36px;font-size:14px;color:var(--text-muted);line-height:1.65;z-index:300;transform:translateY(100%);transition:transform .3s;overflow-y:auto;}
+#notes-panel.show{transform:translateY(0);}
+#qr-overlay{position:fixed;inset:0;background:rgba(9,20,40,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:500;opacity:0;pointer-events:none;transition:opacity .3s;}
+#qr-overlay.show{opacity:1;pointer-events:all;}
+#qr-overlay .qr-title{font-size:22px;font-weight:700;color:var(--text);margin-bottom:8px;}
+#qr-overlay .qr-sub{font-size:14px;color:var(--text-muted);margin-bottom:28px;}
+#qr-overlay canvas{border-radius:12px;}
+.glow{position:fixed;border-radius:50%;filter:blur(130px);pointer-events:none;z-index:0;}
+.glow-a{width:700px;height:700px;background:rgba(43,125,233,.04);top:-250px;right:-200px;}
+.glow-b{width:500px;height:500px;background:rgba(91,163,245,.03);bottom:-200px;left:-150px;}
+.eyebrow{font-size:clamp(9px,1vw,12px);font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-bottom:20px;}
+.hl{color:var(--accent);font-style:normal;}
+.l-statement{display:flex;flex-direction:column;align-items:center;text-align:center;max-width:860px;}
+.l-statement .big{font-size:clamp(52px,8.5vw,108px);font-weight:800;line-height:1.0;letter-spacing:-3px;margin-bottom:28px;}
+.l-statement .sub{font-size:clamp(15px,1.7vw,22px);font-style:italic;color:var(--text-muted);line-height:1.6;margin-bottom:32px;max-width:600px;}
+.rule{width:44px;height:2px;background:var(--accent);margin:0 auto 28px;}
+.byline{font-size:clamp(10px,1vw,12px);font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--text-subtle);}
+.avatar{width:48px;height:48px;border-radius:50%;background:var(--surface2);border:2px solid var(--accent);margin:0 auto 12px;background-size:cover;background-position:center;}
+.big-quote{font-size:clamp(28px,4.5vw,56px);font-weight:700;line-height:1.2;letter-spacing:-1px;margin-bottom:28px;font-style:italic;color:var(--text);}
+.l-section{display:flex;flex-direction:column;align-items:flex-start;width:100%;max-width:1060px;}
+.l-section .big{font-size:clamp(36px,5.8vw,72px);font-weight:800;line-height:1.06;letter-spacing:-2px;margin-bottom:36px;}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;width:100%;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px 26px;}
+.card.hi{border-color:var(--accent);box-shadow:inset 0 0 50px var(--accent-glow);}
+.c-label{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:8px;}
+.c-title{font-size:clamp(14px,1.6vw,18px);font-weight:700;color:var(--text);margin-bottom:6px;line-height:1.25;}
+.c-body{font-size:clamp(11px,1.2vw,14px);color:var(--text-muted);line-height:1.55;}
+.l-split{display:grid;grid-template-columns:1fr 1fr;gap:64px;max-width:1060px;width:100%;align-items:center;}
+.l-split .big{font-size:clamp(34px,5vw,62px);font-weight:800;line-height:1.06;letter-spacing:-1.5px;margin-bottom:18px;}
+.l-split .desc{font-size:clamp(13px,1.45vw,17px);color:var(--text-muted);line-height:1.65;}
+.feat-list{display:flex;flex-direction:column;gap:10px;}
+.feat{display:flex;align-items:flex-start;gap:14px;padding:16px 20px;background:var(--surface);border:1px solid var(--border);border-radius:10px;}
+.fdot{width:7px;height:7px;border-radius:50%;background:var(--accent);margin-top:5px;flex-shrink:0;}
+.ft{font-size:clamp(13px,1.4vw,16px);font-weight:600;color:var(--text);line-height:1.35;}
+.fs{font-size:clamp(10px,1.1vw,13px);color:var(--text-muted);margin-top:3px;line-height:1.4;}
+/* KPI BOXES */
+.kpi-row{display:flex;gap:16px;margin-bottom:28px;}
+.kpi{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 24px;text-align:center;}
+.kpi-val{font-size:clamp(32px,4vw,52px);font-weight:800;color:var(--accent);line-height:1.1;margin-bottom:6px;}
+.kpi-label{font-size:clamp(10px,1vw,12px);font-weight:600;color:var(--text-muted);letter-spacing:.05em;line-height:1.35;}
+.kpi.green .kpi-val{color:var(--green);}
+.kpi.green{border-color:rgba(52,211,153,0.3);box-shadow:inset 0 0 40px var(--green-glow);}
+.kpi.amber .kpi-val{color:var(--amber);}
+.kpi.amber{border-color:rgba(251,191,36,0.3);box-shadow:inset 0 0 40px var(--amber-glow);}
+/* FLOW DIAGRAM */
+.flow{display:flex;align-items:center;gap:0;justify-content:center;flex-wrap:wrap;margin-top:16px;}
+.flow-step{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 18px;text-align:center;min-width:120px;}
+.flow-step .flow-title{font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px;}
+.flow-step .flow-desc{font-size:12px;color:var(--text-muted);}
+.flow-arrow{font-size:20px;color:var(--accent);padding:0 8px;font-weight:700;}
+/* LINK PREVIEW */
+.link-preview{position:relative;color:var(--accent);text-decoration:underline;text-underline-offset:3px;cursor:pointer;display:inline-block;}
+.link-preview:hover .preview-tooltip{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0);}
+.preview-tooltip{position:absolute;bottom:calc(100% + 12px);left:50%;transform:translateX(-50%) translateY(8px);width:360px;height:240px;background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;opacity:0;pointer-events:none;transition:opacity .25s, transform .25s;z-index:200;box-shadow:0 12px 40px rgba(0,0,0,0.5);}
+.preview-tooltip iframe{width:100%;height:100%;border:none;border-radius:10px;pointer-events:none;}
+.preview-tooltip::after{content:'';position:absolute;bottom:-6px;left:50%;transform:translateX(-50%) rotate(45deg);width:12px;height:12px;background:var(--surface);border-right:1px solid var(--border);border-bottom:1px solid var(--border);}
+/* PRINT MODE */
+body.print-mode{overflow:auto!important;}
+body.print-mode #deck{width:100%;height:auto;overflow:visible;}
+body.print-mode .slide{position:relative!important;opacity:1!important;transform:none!important;pointer-events:all!important;page-break-after:always;min-height:100vh;}
+body.print-mode #counter,body.print-mode #nav-dots,body.print-mode #hint,body.print-mode #progress,body.print-mode #timer,body.print-mode .glow{display:none!important;}
+@media print{.slide{position:relative!important;opacity:1!important;transform:none!important;page-break-after:always;min-height:100vh;}#counter,#nav-dots,#hint,#progress,#timer,.glow,#logo{display:none!important;}}
+</style>
+</head>
+<body>
+<div id="deck">
+  <div class="glow glow-a"></div>
+  <div class="glow glow-b"></div>
+  <div id="counter"><b>01</b> / 1</div>
+  <div id="nav-dots"></div>
+  <div id="hint">← → naviger &nbsp;·&nbsp; F fullskjerm &nbsp;·&nbsp; R fjernkontroll &nbsp;·&nbsp; N notater</div>
+  <div id="progress" style="width:0%"></div>
+  <div id="timer">00:00</div>
+  <div id="notes-panel"></div>
+  <div id="qr-overlay"><div class="qr-title">Fjernkontroll</div><div class="qr-sub">Skann med Apple Watch eller telefon</div><canvas id="qr-canvas"></canvas></div>
+  <div id="logo">
+    <svg viewBox="0 0 600 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <text x="0" y="95" font-family="Inter, -apple-system, sans-serif" font-size="110" font-weight="800" fill="#2B7DE9">Commit<tspan fill="#5BA3F5">.</tspan></text>
+    </svg>
+  </div>
+
+  <!-- SLIDE 1 — TITLE -->
+  <div class="slide active" data-notes="Ønsk velkommen til styremøte. Møtet holdes i Tønsberg.">
+    <div class="l-statement">
+      <div class="eyebrow">COMMIT AS</div>
+      <h1 class="big">Styremøte<br><em class="hl">Mars</em> 2026</h1>
+      <p class="sub">Orientering om drift, økonomi og strategi</p>
+      <div class="rule"></div>
+      <div class="byline">26. mars 2026 &nbsp;·&nbsp; Træleborgodden 6, Tønsberg</div>
+    </div>
+  </div>
+
+  <!-- SLIDE 2 — SAKSLISTE -->
+  <div class="slide" data-notes="Gå gjennom sakslisten. Sju saker totalt. Mest tid bør avsettes til økonomi og strategi.">
+    <div class="l-section">
+      <div class="eyebrow">AGENDA</div>
+      <h2 class="big"><em class="hl">Saksliste</em></h2>
+      <div class="grid">
+        <div class="card">
+          <div class="c-label">26/2/1</div>
+          <div class="c-title">Godkjenning av innkalling</div>
+          <div class="c-body">Innkalling og saksliste til godkjenning.</div>
+        </div>
+        <div class="card hi">
+          <div class="c-label">26/2/2 – 26/2/3</div>
+          <div class="c-title">Drift og Økonomi</div>
+          <div class="c-body">Status prosjekter, salg, bemanning. Resultatregnskap 2025 og jan–feb 2026.</div>
+        </div>
+        <div class="card hi">
+          <div class="c-label">26/2/4 – 26/2/5</div>
+          <div class="c-title">Årsrapport og Strategi</div>
+          <div class="c-body">Redegjørelse til årsrapport. Strategigjennomgang med innovasjon og vekst.</div>
+        </div>
+        <div class="card">
+          <div class="c-label">26/2/6 – 26/2/7</div>
+          <div class="c-title">Verneombud og Eventuelt</div>
+          <div class="c-body">Status fra verneombud og åpen diskusjon.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 3 — DRIFT DIVIDER -->
+  <div class="slide" data-notes="Overgang til driftsgjennomgang. Fokus på bemanning, kunder og booking-situasjonen.">
+    <div class="l-statement">
+      <div class="eyebrow">SAK 26/2/2</div>
+      <h1 class="big">Orientering<br>om <em class="hl">drift</em></h1>
+      <p class="sub">Status prosjekter, salg og medarbeidere</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 4 — BEMANNING 2025 -->
+  <div class="slide" data-notes="Fra 0 til 28 ansatte på ett år. Gjennomsnittlig kun 1 ledig. 19 unike kunder inkludert DNV, Avinor, OFV, NHN, DigDir, DNB, Apotek1, Lyse, Sparebank1, KDA. Noe sykefravær (Dag Iwar) og foreldrepermisjoner gjennom året.">
+    <div class="l-split">
+      <div>
+        <div class="eyebrow">2025 OPPSUMMERT</div>
+        <h2 class="big">Bemanning og<br><em class="hl">Oppdrag</em></h2>
+        <p class="desc">Vokste fra 0 til 28 ansatte i løpet av året. Bred kundeportefølje med 19 kunder. Kun 1 ledig konsulent i snitt.</p>
+        <div class="kpi-row" style="margin-top:24px;">
+          <div class="kpi green">
+            <div class="kpi-val">28</div>
+            <div class="kpi-label">Ansatte<br>ved årsslutt</div>
+          </div>
+          <div class="kpi green">
+            <div class="kpi-val">1</div>
+            <div class="kpi-label">Ledig i<br>snitt</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-val">19</div>
+            <div class="kpi-label">Unike<br>kunder</div>
+          </div>
+        </div>
+      </div>
+      <div class="feat-list">
+        <div class="feat">
+          <div class="fdot"></div>
+          <div><div class="ft">DNV, Avinor, OFV, NHN</div><div class="fs">Offentlig sektor og maritim industri</div></div>
+        </div>
+        <div class="feat">
+          <div class="fdot"></div>
+          <div><div class="ft">DigDir, DNB, Apotek1</div><div class="fs">Digitalisering, finans og helse</div></div>
+        </div>
+        <div class="feat">
+          <div class="fdot"></div>
+          <div><div class="ft">Lyse, Sparebank1, KDA</div><div class="fs">Energi, bank og forsvar</div></div>
+        </div>
+        <div class="feat">
+          <div class="fdot" style="background:var(--amber);"></div>
+          <div><div class="ft">Noe fravær gjennom året</div><div class="fs">Lengre sykefravær og foreldrepermisjoner påvirket kapasiteten</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 5 — BOOKINGER 2026 -->
+  <div class="slide" data-notes="Bookinger viser kun definitive avtaler (signert). Bildet kan virke mer usikkert enn realiteten. Dag Danmo og Øyvind Julsrud (40%) trenger oppdrag fra april. Sendt inn til KDA, Apotek1, TV2, Telenor.">
+    <div class="l-split">
+      <div>
+        <div class="eyebrow">FREMOVER</div>
+        <h2 class="big">Bookinger<br><em class="hl">2026</em></h2>
+        <p class="desc">Kun definitive bookinger vist. Bildet kan virke mer usikkert enn hva som er sannsynlig — vi har flere muligheter i pipeline.</p>
+      </div>
+      <div class="feat-list">
+        <div class="feat">
+          <div class="fdot" style="background:var(--green);"></div>
+          <div><div class="ft">Majoriteten booket 100%</div><div class="fs">De fleste konsulenter har signerte avtaler</div></div>
+        </div>
+        <div class="feat">
+          <div class="fdot" style="background:var(--amber);"></div>
+          <div><div class="ft">Dag Danmo — trenger oppdrag</div><div class="fs">Sendt inn til KDA, Apotek1, TV2 og Telenor</div></div>
+        </div>
+        <div class="feat">
+          <div class="fdot" style="background:var(--amber);"></div>
+          <div><div class="ft">Øyvind Julsrud — 40% dekning</div><div class="fs">Aktive muligheter hos flere kunder fra april</div></div>
+        </div>
+        <div class="feat">
+          <div class="fdot"></div>
+          <div><div class="ft">Sterk pipeline</div><div class="fs">Flere gode muligheter som ikke er signert ennå</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 6 — ØKONOMI DIVIDER -->
+  <div class="slide" data-notes="Overgang til økonomidelen. Gjennomgang av 2025-regnskapet og de to første månedene i 2026.">
+    <div class="l-statement">
+      <div class="eyebrow">SAK 26/2/3</div>
+      <h1 class="big">Økonomi og<br><em class="hl">Risikostyring</em></h1>
+      <p class="sub">Resultatregnskap 2025 og jan–feb 2026</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 7 — RESULTAT 2025 -->
+  <div class="slide" data-notes="Årsresultat 2025: 31.817 TNOK i inntekter, 31.688 TNOK i kostnader, 129 TNOK i overskudd. Målet er å levere verdiene tilbake til konsulentene — det har vi lykkes med uten å ta opp lån.">
+    <div class="l-split">
+      <div>
+        <div class="eyebrow">ÅRSREGNSKAP 2025</div>
+        <h2 class="big">Første år i <em class="hl">balanse</em></h2>
+        <p class="desc">Målet i Commits grunnmodell er å levere verdiene tilbake til konsulentene. Helt uten lån, med stabil drift fra dag én.</p>
+        <div class="kpi-row" style="margin-top:24px;">
+          <div class="kpi green">
+            <div class="kpi-val" style="font-size:clamp(22px,3vw,36px);">31 817</div>
+            <div class="kpi-label">Driftsinntekter<br>TNOK</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-val" style="font-size:clamp(22px,3vw,36px);">31 688</div>
+            <div class="kpi-label">Driftskostnader<br>TNOK</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:20px;">
+        <div class="kpi green" style="width:100%;padding:32px;">
+          <div class="kpi-val" style="font-size:clamp(36px,5vw,64px);">129</div>
+          <div class="kpi-label" style="font-size:14px;">TNOK Årsresultat</div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 22px;">
+          <div style="font-size:12px;color:var(--text-muted);line-height:1.55;">Kilde: Tripletex &nbsp;·&nbsp; 01.01 – 31.12.2025</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 8 — RESULTAT JAN-FEB 2026 -->
+  <div class="slide" data-notes="Jan-feb 2026: 9.702 TNOK inntekter, 7.165 TNOK kostnader, 2.537 TNOK driftsresultat. Vesentlig større overskudd forventes i 2026 fordi årsbonusen knyttet til oppstartsåret utgår.">
+    <div class="l-split">
+      <div>
+        <div class="eyebrow">JAN – FEB 2026</div>
+        <h2 class="big">Sterk <em class="hl">start</em></h2>
+        <p class="desc">Vesentlig større overskudd forventes i 2026 fordi årsbonusen knyttet til driftsoppstartsåret utgår.</p>
+        <div class="kpi-row" style="margin-top:24px;">
+          <div class="kpi">
+            <div class="kpi-val" style="font-size:clamp(20px,2.5vw,32px);">9 702</div>
+            <div class="kpi-label">Driftsinntekter<br>TNOK</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-val" style="font-size:clamp(20px,2.5vw,32px);">7 165</div>
+            <div class="kpi-label">Driftskostnader<br>TNOK</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:20px;">
+        <div class="kpi green" style="width:100%;padding:32px;">
+          <div class="kpi-val" style="font-size:clamp(36px,5vw,64px);">2 537</div>
+          <div class="kpi-label" style="font-size:14px;">TNOK Driftsresultat</div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 22px;">
+          <div style="font-size:12px;color:var(--text-muted);line-height:1.55;">Kilde: Tripletex &nbsp;·&nbsp; 01.01 – 28.02.2026</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 9 — STRATEGI DIVIDER -->
+  <div class="slide" data-notes="Overgang til strategidelen. Fokus på innovasjon, vekstmuligheter og nye forretningsmodeller.">
+    <div class="l-statement">
+      <div class="eyebrow">SAK 26/2/5</div>
+      <h1 class="big">Strategi-<br><em class="hl">gjennomgang</em></h1>
+      <p class="sub">Innovasjon, vekstmuligheter og nye forretningsmodeller</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 10 — INNOVASJON OG VEKST -->
+  <div class="slide" data-notes="Fire strategiske satsinger: Anthropic-partnerskap for KI-agenter, sideprosjektmodell for innovasjon, kundeprosjekter på Commits risiko, og egne produkter som Commit Compliance.">
+    <div class="l-section">
+      <div class="eyebrow">VEKSTMULIGHETER</div>
+      <h2 class="big">Innovasjon og <em class="hl">Vekst</em></h2>
+      <div class="grid">
+        <div class="card hi">
+          <div class="c-label">Partnerskap</div>
+          <div class="c-title">Anthropic-partner</div>
+          <div class="c-body">Posisjonere oss som et av Norges fremste miljøer på KI-agenter og Claude-løsninger. Mulighet for å selge lisenser til kunder.</div>
+        </div>
+        <div class="card">
+          <div class="c-label">Innovasjon</div>
+          <div class="c-title">Sideprosjektmodell</div>
+          <div class="c-body">Konsulenten beholder fastlønnskostnaden dekket av Commit. Ingen tapt provisjon. Bonus ved suksess vedtas av styret.</div>
+        </div>
+        <div class="card">
+          <div class="c-label">Høy Margin</div>
+          <div class="c-title">Kundeprosjekter på vår risiko</div>
+          <div class="c-body">Commit tar risiko og ledelse. Høyere margin, men krever god prosjektstyring og estimering.</div>
+        </div>
+        <div class="card">
+          <div class="c-label">SaaS-Produkt</div>
+          <div class="c-title">Commit Compliance</div>
+          <div class="c-body">EU-compliant KI-infrastruktur via AWS Bedrock. Potensielt første SaaS-produkt. Søkes om SkatteFunn.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 11 — COMMIT COMPLIANCE -->
+  <div class="slide" data-notes="Forklar produktet i detalj. AWS Bedrock med EU-inferensprofiler. Claude Code med managed settings. PII-skanning, audit-logging, DPIA-mal. 3-4 uker fra kickoff til produksjon.">
+    <div class="l-split">
+      <div>
+        <div class="eyebrow">PRODUKT</div>
+        <h2 class="big">Commit<br><em class="hl">Compliance</em></h2>
+        <p class="desc">Claude Code med EU data residency. Full GDPR-kontroll over hvor personopplysninger behandles, via AWS Bedrock.</p>
+        <div class="flow" style="margin-top:20px;">
+          <div class="flow-step">
+            <div class="flow-title">Utvikler</div>
+            <div class="flow-desc">Lokal maskin</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step" style="border-color:var(--accent);">
+            <div class="flow-title">Plugin</div>
+            <div class="flow-desc">PII-skanning</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <div class="flow-title">AWS Bedrock</div>
+            <div class="flow-desc">EU-regioner</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step" style="border-color:var(--accent);">
+            <div class="flow-title">Claude</div>
+            <div class="flow-desc">EU-inferens</div>
+          </div>
+        </div>
+      </div>
+      <div class="feat-list">
+        <div class="feat">
+          <div class="fdot"></div>
+          <div><div class="ft">AWS Bedrock EU-profiler</div><div class="fs">Frankfurt, Stockholm, Paris — full data residency</div></div>
+        </div>
+        <div class="feat">
+          <div class="fdot"></div>
+          <div><div class="ft">PII-detektor og audit-logging</div><div class="fs">Automatisk skanning og loggføring av alle kall</div></div>
+        </div>
+        <div class="feat">
+          <div class="fdot"></div>
+          <div><div class="ft">Compliance-dokumentasjon</div><div class="fs">DPIA-mal, underdatabehandleroversikt, brukerretningslinjer</div></div>
+        </div>
+        <div class="feat">
+          <div class="fdot"></div>
+          <div><div class="ft">3–4 uker til produksjon</div><div class="fs">Inkludert onboarding-workshop og 2 uker pilotperiode</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 12 — CASE: DIGDIR -->
+  <div class="slide" data-notes="PoC KI-agenter for DigDir. 62 timer, 99.200 NOK. Under anbudsgrensa. Første salg med Compliance-produktet. Bygger på eksisterende konsulentrelasjon. Skalerbar modell.">
+    <div class="l-split">
+      <div>
+        <div class="eyebrow">KUNDECASE</div>
+        <h2 class="big">DigDir<br><em class="hl">KI-Agenter</em></h2>
+        <p class="desc">PoC sendt 25. mars 2026. Første salg med Commit Compliance som del av leveransen.</p>
+        <div class="kpi-row" style="margin-top:20px;">
+          <div class="kpi">
+            <div class="kpi-val" style="font-size:clamp(20px,3vw,36px);">62t</div>
+            <div class="kpi-label">Timesbank</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-val" style="font-size:clamp(18px,2.5vw,30px);">99 200</div>
+            <div class="kpi-label">NOK eks. mva</div>
+          </div>
+        </div>
+      </div>
+      <div class="feat-list">
+        <div class="feat">
+          <div class="fdot"></div>
+          <div><div class="ft">Agent-ferdigheter og skills</div><div class="fs">21 timer — bibliotek og implementering</div></div>
+        </div>
+        <div class="feat">
+          <div class="fdot"></div>
+          <div><div class="ft">Kodebase-tilrettelegging</div><div class="fs">9 timer — tilpasse for agentbruk</div></div>
+        </div>
+        <div class="feat">
+          <div class="fdot"></div>
+          <div><div class="ft">EU-compliant KI-infra</div><div class="fs">10 timer — Commit Compliance-pakken</div></div>
+        </div>
+        <div class="feat">
+          <div class="fdot"></div>
+          <div><div class="ft">Workshop og veikart</div><div class="fs">16 timer — kompetanseoverføring og strategisk rådgivning</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 13 — CLOSING -->
+  <div class="slide" data-notes="Oppsummer nøkkelpunktene: stabil drift, sterk økonomi, spennende strategiske muligheter. Åpne for spørsmål og diskusjon.">
+    <div class="l-statement">
+      <div class="eyebrow">OPPSUMMERING</div>
+      <h1 class="big">Spørsmål og<br><em class="hl">diskusjon</em></h1>
+      <p class="sub">Takk for oppmerksomheten</p>
+      <div class="rule"></div>
+      <div class="byline">Commit AS &nbsp;·&nbsp; Styremøte 26. mars 2026</div>
+    </div>
+  </div>
+
+</div>
+<script>
+(function(){
+  const bc = new BroadcastChannel('commit-slides');
+  const isRemote = new URLSearchParams(window.location.search).has('remote');
+
+  if (isRemote) {
+    document.body.style.background = '#091428';
+    document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:#091428;gap:16px;font-family:Inter,-apple-system,sans-serif;padding:12px;"><div style="width:60px;margin-bottom:8px;opacity:0.7;"><svg viewBox="0 0 600 120" fill="none"><text x="0" y="95" font-family="Inter,sans-serif" font-size="110" font-weight="800" fill="#2B7DE9">Commit<tspan fill="#5BA3F5">.</tspan></text></svg></div><div id="rc-counter" style="font-size:20px;color:#E8EDF5;font-weight:700;">1 / ?</div><button onclick="bc.postMessage(\'prev\')" style="width:85vw;max-width:220px;padding:18px;font-size:16px;font-weight:700;background:#152A4D;color:#E8EDF5;border:2px solid #1E3D6B;border-radius:12px;cursor:pointer;">&#9664; Forrige</button><button onclick="bc.postMessage(\'next\')" style="width:85vw;max-width:220px;padding:18px;font-size:16px;font-weight:700;background:#2B7DE9;color:#fff;border:none;border-radius:12px;cursor:pointer;">Neste &#9654;</button></div>';
+    bc.onmessage = e => { if (e.data.slide !== undefined) document.getElementById('rc-counter').textContent = e.data.slide; };
+    return;
+  }
+
+  const slides=Array.from(document.querySelectorAll('.slide'));
+  const total=slides.length;
+  let cur=0;
+  let timerOn=false, timerStart=Date.now(), timerInterval;
+  const dotsEl=document.getElementById('nav-dots');
+  slides.forEach((_,i)=>{const d=document.createElement('div');d.className='dot'+(i===0?' on':'');d.addEventListener('click',()=>go(i));dotsEl.appendChild(d);});
+
+  function updateUI(){
+    const n=String(cur+1).padStart(2,'0');
+    document.getElementById('counter').innerHTML='<b>'+n+'</b> / '+total;
+    dotsEl.querySelectorAll('.dot').forEach((d,i)=>d.classList.toggle('on',i===cur));
+    document.getElementById('progress').style.width=((cur+1)/total*100)+'%';
+    const notes=slides[cur].getAttribute('data-notes')||'';
+    document.getElementById('notes-panel').textContent=notes||'Ingen notater for denne sliden.';
+    bc.postMessage({slide:(cur+1)+' / '+total});
+  }
+
+  function go(n){if(n===cur)return;slides[cur].classList.add('out');slides[cur].classList.remove('active');setTimeout(()=>slides[n].classList.remove('out'),380);cur=Math.max(0,Math.min(total-1,n));slides[cur].classList.add('active');updateUI();}
+  function next(){if(cur<total-1)go(cur+1);}
+  function prev(){if(cur>0)go(cur-1);}
+
+  bc.onmessage=e=>{if(e.data==='next')next();if(e.data==='prev')prev();};
+
+  document.addEventListener('keydown',e=>{
+    if(e.key==='ArrowRight'||e.key==='ArrowDown')next();
+    if(e.key==='ArrowLeft'||e.key==='ArrowUp')prev();
+    if(e.key==='f'||e.key==='F')document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();
+    if(e.key==='n'||e.key==='N')document.getElementById('notes-panel').classList.toggle('show');
+    if(e.key==='t'||e.key==='T'){
+      timerOn=!timerOn;
+      document.getElementById('timer').classList.toggle('show',timerOn);
+      if(timerOn&&!timerInterval){timerStart=Date.now();timerInterval=setInterval(()=>{const s=Math.floor((Date.now()-timerStart)/1000);document.getElementById('timer').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');},1000);}
+    }
+    if(e.key==='r'||e.key==='R')document.getElementById('qr-overlay').classList.toggle('show');
+    if(e.key==='p'||e.key==='P')document.body.classList.toggle('print-mode');
+    if(e.key==='Escape'){document.getElementById('qr-overlay').classList.remove('show');document.getElementById('notes-panel').classList.remove('show');}
+  });
+
+  let tx=0;
+  document.addEventListener('touchstart',e=>tx=e.touches[0].clientX,{passive:true});
+  document.addEventListener('touchend',e=>{const dx=tx-e.changedTouches[0].clientX;if(Math.abs(dx)>40)dx>0?next():prev();},{passive:true});
+
+  (function generateQR(){
+    const url=window.location.href.split('?')[0]+'?remote';
+    const canvas=document.getElementById('qr-canvas');
+    if(!canvas)return;
+    const ctx=canvas.getContext('2d');
+    const size=200;canvas.width=size;canvas.height=size;
+    ctx.fillStyle='#E8EDF5';ctx.fillRect(0,0,size,size);
+    ctx.fillStyle='#091428';ctx.font='bold 14px Inter,sans-serif';ctx.textAlign='center';
+    ctx.fillText('Remote URL:',size/2,size/2-20);
+    ctx.font='11px Inter,sans-serif';
+    const shortUrl=url.length>40?url.substring(0,37)+'...':url;
+    ctx.fillText(shortUrl,size/2,size/2+5);
+    ctx.font='10px Inter,sans-serif';ctx.fillStyle='#3A5478';
+    ctx.fillText('(Bruk en QR-app for full funksjon)',size/2,size/2+30);
+  })();
+
+  updateUI();
+})();
+</script>
+</body>
+</html>
