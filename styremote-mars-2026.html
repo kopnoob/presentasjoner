@@ -105,7 +105,7 @@ body.print-mode #counter,body.print-mode #nav-dots,body.print-mode #hint,body.pr
   <div id="progress" style="width:0%"></div>
   <div id="timer">00:00</div>
   <div id="notes-panel"></div>
-  <div id="qr-overlay"><div class="qr-title">Fjernkontroll</div><div class="qr-sub">Skann med Apple Watch eller telefon</div><canvas id="qr-canvas"></canvas></div>
+  <div id="qr-overlay"><div class="qr-title">Fjernkontroll</div><div class="qr-sub" style="word-break:break-all;max-width:480px;text-align:center;">Laster...</div><div style="margin-top:24px;background:#152A4D;border:2px solid #2B7DE9;border-radius:16px;padding:24px 48px;"><div style="font-size:11px;color:#8BA3C4;letter-spacing:.15em;text-transform:uppercase;margin-bottom:8px;">Romkode</div><div id="room-code" style="font-size:48px;font-weight:800;color:#2B7DE9;letter-spacing:.15em;"></div></div><div style="margin-top:18px;font-size:12px;color:#3A5478;">Trykk R for å lukke</div></div>
   <div id="logo">
     <svg viewBox="0 0 600 120" fill="none" xmlns="http://www.w3.org/2000/svg">
       <text x="0" y="95" font-family="Inter, -apple-system, sans-serif" font-size="110" font-weight="800" fill="#2B7DE9">Commit<tspan fill="#5BA3F5">.</tspan></text>
@@ -445,73 +445,120 @@ body.print-mode #counter,body.print-mode #nav-dots,body.print-mode #hint,body.pr
 </div>
 <script>
 (function(){
-  const bc = new BroadcastChannel('commit-slides');
-  const isRemote = new URLSearchParams(window.location.search).has('remote');
+  var params = new URLSearchParams(window.location.search);
+  var isRemote = params.has('remote');
+  var roomId = params.get('remote') || window.location.hash.substring(1) || Math.random().toString(36).substring(2,6).toUpperCase();
+  if (!isRemote && !window.location.hash.substring(1)) window.location.hash = roomId;
+  var ntfyBase = 'https://ntfy.sh/commit-deck-' + roomId;
 
   if (isRemote) {
     document.body.style.background = '#091428';
-    document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:#091428;gap:16px;font-family:Inter,-apple-system,sans-serif;padding:12px;"><div style="width:60px;margin-bottom:8px;opacity:0.7;"><svg viewBox="0 0 600 120" fill="none"><text x="0" y="95" font-family="Inter,sans-serif" font-size="110" font-weight="800" fill="#2B7DE9">Commit<tspan fill="#5BA3F5">.</tspan></text></svg></div><div id="rc-counter" style="font-size:20px;color:#E8EDF5;font-weight:700;">1 / ?</div><button onclick="bc.postMessage(\'prev\')" style="width:85vw;max-width:220px;padding:18px;font-size:16px;font-weight:700;background:#152A4D;color:#E8EDF5;border:2px solid #1E3D6B;border-radius:12px;cursor:pointer;">&#9664; Forrige</button><button onclick="bc.postMessage(\'next\')" style="width:85vw;max-width:220px;padding:18px;font-size:16px;font-weight:700;background:#2B7DE9;color:#fff;border:none;border-radius:12px;cursor:pointer;">Neste &#9654;</button></div>';
-    bc.onmessage = e => { if (e.data.slide !== undefined) document.getElementById('rc-counter').textContent = e.data.slide; };
+    document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:#091428;gap:16px;font-family:Inter,-apple-system,sans-serif;padding:12px;">'
+      + '<div style="width:60px;margin-bottom:8px;opacity:0.7;"><svg viewBox="0 0 600 120" fill="none"><text x="0" y="95" font-family="Inter,sans-serif" font-size="110" font-weight="800" fill="#2B7DE9">Commit<tspan fill="#5BA3F5">.</tspan></text></svg></div>'
+      + '<div id="rc-counter" style="font-size:20px;color:#E8EDF5;font-weight:700;">Kobler til...</div>'
+      + '<button id="btn-prev" style="width:85vw;max-width:220px;padding:22px;font-size:18px;font-weight:700;background:#152A4D;color:#E8EDF5;border:2px solid #1E3D6B;border-radius:12px;cursor:pointer;-webkit-tap-highlight-color:transparent;">&#9664; Forrige</button>'
+      + '<button id="btn-next" style="width:85vw;max-width:220px;padding:22px;font-size:18px;font-weight:700;background:#2B7DE9;color:#fff;border:none;border-radius:12px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Neste &#9654;</button>'
+      + '</div>';
+
+    function sendCmd(cmd) {
+      fetch(ntfyBase, { method: 'POST', body: cmd }).catch(function(){});
+    }
+    document.getElementById('btn-prev').addEventListener('click', function(){ sendCmd('prev'); });
+    document.getElementById('btn-next').addEventListener('click', function(){ sendCmd('next'); });
+
+    var es = new EventSource(ntfyBase + '/sse');
+    es.addEventListener('message', function(e) {
+      try {
+        var data = JSON.parse(e.data);
+        if (data.message && data.message.indexOf('slide:') === 0) {
+          document.getElementById('rc-counter').textContent = data.message.substring(6);
+        }
+      } catch(err) {}
+    });
     return;
   }
 
-  const slides=Array.from(document.querySelectorAll('.slide'));
-  const total=slides.length;
-  let cur=0;
-  let timerOn=false, timerStart=Date.now(), timerInterval;
-  const dotsEl=document.getElementById('nav-dots');
-  slides.forEach((_,i)=>{const d=document.createElement('div');d.className='dot'+(i===0?' on':'');d.addEventListener('click',()=>go(i));dotsEl.appendChild(d);});
+  /* ---- PRESENTER MODE ---- */
+  var slides = Array.from(document.querySelectorAll('.slide'));
+  var total = slides.length;
+  var cur = 0;
+  var timerOn = false, timerStart = Date.now(), timerInterval;
+  var dotsEl = document.getElementById('nav-dots');
 
-  function updateUI(){
-    const n=String(cur+1).padStart(2,'0');
-    document.getElementById('counter').innerHTML='<b>'+n+'</b> / '+total;
-    dotsEl.querySelectorAll('.dot').forEach((d,i)=>d.classList.toggle('on',i===cur));
-    document.getElementById('progress').style.width=((cur+1)/total*100)+'%';
-    const notes=slides[cur].getAttribute('data-notes')||'';
-    document.getElementById('notes-panel').textContent=notes||'Ingen notater for denne sliden.';
-    bc.postMessage({slide:(cur+1)+' / '+total});
-  }
-
-  function go(n){if(n===cur)return;slides[cur].classList.add('out');slides[cur].classList.remove('active');setTimeout(()=>slides[n].classList.remove('out'),380);cur=Math.max(0,Math.min(total-1,n));slides[cur].classList.add('active');updateUI();}
-  function next(){if(cur<total-1)go(cur+1);}
-  function prev(){if(cur>0)go(cur-1);}
-
-  bc.onmessage=e=>{if(e.data==='next')next();if(e.data==='prev')prev();};
-
-  document.addEventListener('keydown',e=>{
-    if(e.key==='ArrowRight'||e.key==='ArrowDown')next();
-    if(e.key==='ArrowLeft'||e.key==='ArrowUp')prev();
-    if(e.key==='f'||e.key==='F')document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();
-    if(e.key==='n'||e.key==='N')document.getElementById('notes-panel').classList.toggle('show');
-    if(e.key==='t'||e.key==='T'){
-      timerOn=!timerOn;
-      document.getElementById('timer').classList.toggle('show',timerOn);
-      if(timerOn&&!timerInterval){timerStart=Date.now();timerInterval=setInterval(()=>{const s=Math.floor((Date.now()-timerStart)/1000);document.getElementById('timer').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');},1000);}
-    }
-    if(e.key==='r'||e.key==='R')document.getElementById('qr-overlay').classList.toggle('show');
-    if(e.key==='p'||e.key==='P')document.body.classList.toggle('print-mode');
-    if(e.key==='Escape'){document.getElementById('qr-overlay').classList.remove('show');document.getElementById('notes-panel').classList.remove('show');}
+  slides.forEach(function(_, i) {
+    var d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' on' : '');
+    d.addEventListener('click', function(){ go(i); });
+    dotsEl.appendChild(d);
   });
 
-  let tx=0;
-  document.addEventListener('touchstart',e=>tx=e.touches[0].clientX,{passive:true});
-  document.addEventListener('touchend',e=>{const dx=tx-e.changedTouches[0].clientX;if(Math.abs(dx)>40)dx>0?next():prev();},{passive:true});
+  /* Show room code in overlay */
+  var roomDisplay = document.getElementById('room-code');
+  if (roomDisplay) roomDisplay.textContent = roomId;
+  var remoteUrl = window.location.href.split('?')[0].split('#')[0] + '?remote=' + roomId;
+  var qrSub = document.querySelector('#qr-overlay .qr-sub');
+  if (qrSub) qrSub.textContent = remoteUrl;
 
-  (function generateQR(){
-    const url=window.location.href.split('?')[0]+'?remote';
-    const canvas=document.getElementById('qr-canvas');
-    if(!canvas)return;
-    const ctx=canvas.getContext('2d');
-    const size=200;canvas.width=size;canvas.height=size;
-    ctx.fillStyle='#E8EDF5';ctx.fillRect(0,0,size,size);
-    ctx.fillStyle='#091428';ctx.font='bold 14px Inter,sans-serif';ctx.textAlign='center';
-    ctx.fillText('Remote URL:',size/2,size/2-20);
-    ctx.font='11px Inter,sans-serif';
-    const shortUrl=url.length>40?url.substring(0,37)+'...':url;
-    ctx.fillText(shortUrl,size/2,size/2+5);
-    ctx.font='10px Inter,sans-serif';ctx.fillStyle='#3A5478';
-    ctx.fillText('(Bruk en QR-app for full funksjon)',size/2,size/2+30);
-  })();
+  /* Listen for remote commands via ntfy.sh */
+  var es = new EventSource(ntfyBase + '/sse');
+  es.addEventListener('message', function(e) {
+    try {
+      var data = JSON.parse(e.data);
+      if (data.message === 'next') next();
+      if (data.message === 'prev') prev();
+    } catch(err) {}
+  });
+
+  function broadcastSlide() {
+    fetch(ntfyBase, { method: 'POST', body: 'slide:' + String(cur + 1).padStart(2, '0') + ' / ' + total }).catch(function(){});
+  }
+
+  function updateUI() {
+    var n = String(cur + 1).padStart(2, '0');
+    document.getElementById('counter').innerHTML = '<b>' + n + '</b> / ' + total;
+    dotsEl.querySelectorAll('.dot').forEach(function(d, i){ d.classList.toggle('on', i === cur); });
+    document.getElementById('progress').style.width = ((cur + 1) / total * 100) + '%';
+    var notes = slides[cur].getAttribute('data-notes') || '';
+    document.getElementById('notes-panel').textContent = notes || 'Ingen notater for denne sliden.';
+    broadcastSlide();
+  }
+
+  function go(n) {
+    if (n === cur) return;
+    slides[cur].classList.add('out');
+    slides[cur].classList.remove('active');
+    setTimeout(function(){ slides[n].classList.remove('out'); }, 380);
+    cur = Math.max(0, Math.min(total - 1, n));
+    slides[cur].classList.add('active');
+    updateUI();
+  }
+  function next() { if (cur < total - 1) go(cur + 1); }
+  function prev() { if (cur > 0) go(cur - 1); }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next();
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prev();
+    if (e.key === 'f' || e.key === 'F') document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+    if (e.key === 'n' || e.key === 'N') document.getElementById('notes-panel').classList.toggle('show');
+    if (e.key === 't' || e.key === 'T') {
+      timerOn = !timerOn;
+      document.getElementById('timer').classList.toggle('show', timerOn);
+      if (timerOn && !timerInterval) {
+        timerStart = Date.now();
+        timerInterval = setInterval(function(){
+          var s = Math.floor((Date.now() - timerStart) / 1000);
+          document.getElementById('timer').textContent = String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+        }, 1000);
+      }
+    }
+    if (e.key === 'r' || e.key === 'R') document.getElementById('qr-overlay').classList.toggle('show');
+    if (e.key === 'p' || e.key === 'P') document.body.classList.toggle('print-mode');
+    if (e.key === 'Escape') { document.getElementById('qr-overlay').classList.remove('show'); document.getElementById('notes-panel').classList.remove('show'); }
+  });
+
+  var tx = 0;
+  document.addEventListener('touchstart', function(e){ tx = e.touches[0].clientX; }, {passive: true});
+  document.addEventListener('touchend', function(e){ var dx = tx - e.changedTouches[0].clientX; if (Math.abs(dx) > 40) dx > 0 ? next() : prev(); }, {passive: true});
 
   updateUI();
 })();
